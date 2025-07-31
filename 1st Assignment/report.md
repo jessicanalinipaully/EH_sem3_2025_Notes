@@ -5,69 +5,98 @@
 
 ---
 
-### Methodology
+## 🎯 Methodology
 
-I performed a service version scan on the target website **testphp.vulnweb.com** using Nmap with the following command:
+I performed a service version scan on the target website `testphp.vulnweb.com` using Nmap.
+
+### 🔧 Command Used:
 
 ```bash
 sudo nmap -sV -Pn testphp.vulnweb.com
 ````
 
-The `-sV` option enables version detection, and `-Pn` skips host discovery to avoid issues if the server blocks ICMP ping requests. The scan aimed to identify open ports and their respective software versions to assess potential vulnerabilities.
+* `-sV`: Enables version detection
+* `-Pn`: Skips ping checks (useful if ICMP is blocked)
+
+This revealed services and versions running on the host, which I then researched for known CVEs.
 
 ---
 
-### Findings
+## 🔍 Findings
 
-**1. PHP 5.6.40**
+### ✅ 1. PHP 5.6.40
 
-* Detected via HTTP headers (`X-Powered-By`).
-* PHP 5.6.40 is an outdated version that reached end-of-life in January 2019.
-* Known vulnerabilities include:
+* **Detected:** Via HTTP headers (`X-Powered-By`)
+* **Status:** End-of-life (EOL) since Jan 2019
+* **Known CVEs:**
 
-  * **CVE-2019-9023:** Buffer over-read vulnerability leading to potential crashes or data leakage.
-  * **CVE-2019-9024:** XML-RPC remote memory corruption.
-  * **CVE-2019-6977:** Heap buffer overflow in GD library that could lead to remote code execution.
+  * `CVE-2019-9023`: Buffer over-read — may lead to crash or memory disclosure
+  * `CVE-2019-9024`: XML-RPC remote memory corruption
+  * `CVE-2019-6977`: Heap buffer overflow in the GD module
 
-*Risk:* These vulnerabilities can be exploited to crash the server, leak sensitive information, or even execute arbitrary code remotely.
+**🛑 Risk:** These vulnerabilities could allow remote attackers  to crash the service, leak data, or execute arbitrary code.
 
-![PHP Vulnerabilities](php-vulnerabilities.png)
+<img width="1463" height="811" alt="php-vulnerabilities" src="https://github.com/user-attachments/assets/59a27acd-c915-4513-a918-cc4b13697493" />
+
 
 ---
 
-**2. Apache HTTP Server**
+### ✅ 2. Apache HTTP Server
 
-* Version not explicitly detected by Nmap but commonly runs on port 443.
-* Multiple critical vulnerabilities in Apache 2.4.49 and 2.4.50:
+* **Detected:** Likely on port 443 (HTTPS), common with this host
+* **Vulnerable Versions Identified:**
 
-  * **CVE-2021-41773:** Path traversal vulnerability allowing attackers to access files outside web root directories.
-  * **CVE-2021-42013:** Incomplete fix for CVE-2021-41773, enabling continued exploitation.
+  * `Apache 2.4.49`: CVE-2021-41773
+  * `Apache 2.4.50`: CVE-2021-42013
 
-*Risk:* These flaws can allow attackers to access sensitive files and potentially execute remote code, compromising server integrity.
+**🛑 Risk:** These versions allow path traversal, letting attackers access unauthorized files outside the web root. If CGI is enabled, they may also execute commands remotely.
 
-![Apache CVEs](apache-cve.png)
+<img width="1459" height="877" alt="apache-cve" src="https://github.com/user-attachments/assets/8339e030-df7c-4eee-bb33-3bb916691c56" />
+
+---
+### ✅ 3. Nmap Service Version Scan
+
+- **Purpose:** Identify running services and their versions on `testphp.vulnweb.com`  
+- **Tool Used:** Nmap
+
+### 🔧 Command Used:
+
+```bash
+sudo nmap -sV -Pn testphp.vulnweb.com
+````
+
+* `-sV`: Enables version detection
+* `-Pn`: Disables host discovery (useful if ICMP ping is blocked)
+
+### 🧾 Output Summary:
+
+* Port 80 (HTTP): PHP 5.6.40 detected via HTTP headers
+* Port 443 (HTTPS): Apache HTTPD assumed (version inferred via CVE research)
+* Other ports: closed or filtered
+
+**🛑 Risk:** Identifying outdated services is crucial for vulnerability assessment. Using `-Pn` helps detect hosts behind firewalls that block ping.
+
+
+<img width="960" height="839" alt="nmap-services" src="https://github.com/user-attachments/assets/f7fd22bd-61bc-4df3-b037-a1005eaed28b" />
+
 
 ---
 
-**3. Service Version Scan**
+## 📌 Conclusion
 
-* The Nmap scan did not detect open ports or specific service versions initially, likely due to firewall or ping blocking.
-* Using the `-Pn` flag allowed successful service version detection (e.g., PHP version via HTTP headers).
+The vulnerability assessment on `testphp.vulnweb.com` revealed that the target is running several outdated and potentially vulnerable services:
 
-![Nmap Scan](nmap-scan.png)
+- **PHP 5.6.40**, which has reached end-of-life and contains multiple critical vulnerabilities that could allow remote code execution, memory corruption, or denial of service.
+- **Apache HTTP Server versions 2.4.49 and 2.4.50**, which are affected by serious path traversal vulnerabilities that could expose sensitive files or enable remote code execution if CGI is enabled.
+- The use of outdated software significantly increases the attack surface and risk of compromise.
 
----
+These findings highlight the importance of regular software updates and security patching to mitigate known vulnerabilities.
 
-### Conclusion
+## ✅ Recommendation
 
-The target system is running **outdated software versions** (PHP 5.6.40, Apache 2.4.49/2.4.50) with known critical vulnerabilities. Attackers could exploit these flaws to gain unauthorized access, cause denial-of-service, or execute remote code.<img width="960" height="839" alt="nmap-services" src="https://github.com/user-attachments/assets/99eea6c5-986e-4c73-a98e-644a63c6fb1a" />
-<img width="1459" height="877" alt="apache-cve" src="https://github.com/user-attachments/assets/066347b1-90f4-49d0-9147-9bbca8ea4ed0" />
-<img width="1463" height="811" alt="php-vulnerabilities" src="https://github.com/user-attachments/assets/da69d3cb-7154-45b2-91db-64e2190cdc31" />
-
-
-
-```
-<img width="1463" height="811" alt="php-vulnerabilities" src="https://github.com/user-attachments/assets/20879415-8c18-4408-8beb-e3974fa36802" />
-<img width="1459" height="877" alt="apache-cve" src="https://github.com/user-attachments/assets/febc3530-45ff-4143-a3e1-48f1cd15e2af" />
-
+- **Immediate patching or upgrading** of PHP to a supported and secure version (e.g., PHP 7.4 or later) is essential to close critical security gaps.
+- Upgrade Apache HTTP Server to the latest stable release, ensuring all known CVEs are addressed.
+- Consider disabling or restricting CGI modules unless absolutely necessary, to reduce risk.
+- Implement additional security controls such as Web Application Firewalls (WAFs) to help filter and block malicious traffic.
+- Regularly perform vulnerability scans and keep software up to date as part of a proactive security strategy.
 
